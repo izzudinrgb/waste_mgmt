@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <title>BinBeat – Smart Waste Dashboard</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════════
+     MOBILE TOGGLE + OVERLAY
+══════════════════════════════════════════════════════════════ -->
+<button class="nav-toggle" id="navToggle" aria-label="Open menu">☰</button>
+<div class="nav-overlay"></div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     SIDE NAV
+══════════════════════════════════════════════════════════════ -->
+<aside class="sidenav">
+
+  <div class="sidenav-brand">
+    <h1>BinBeat</h1>
+    <p>Smart waste · UTP campus</p>
+  </div>
+
+  <nav>
+    <div class="nav-section-label">Views</div>
+
+    <button class="nav-item active" data-page="page-dashboard">
+      <span class="ni">📊</span> Dashboard
+    </button>
+    <button class="nav-item" data-page="page-map">
+      <span class="ni">🗺️</span> Campus Map
+    </button>
+
+    <div class="nav-section-label">Settings</div>
+    <button class="nav-item" data-page="page-about">
+      <span class="ni">ℹ️</span> About
+    </button>
+
+    <!-- Scenarios in sidebar -->
+    <div class="nav-scenarios">
+      <button class="nav-scenarios-toggle" id="scToggle">
+        <span style="display:flex;align-items:center;gap:8px">
+          <span class="ni">⚡</span> Scenarios
+        </span>
+        <span class="caret">▾</span>
+      </button>
+      <div class="nav-scenarios-body" id="scBody">
+        <button class="sc-btn" data-sc="lunch">🍱 Lunch rush</button>
+        <button class="sc-btn" data-sc="exam">📚 Exam evening</button>
+        <button class="sc-btn" data-sc="event">🎉 Event afternoon</button>
+        <button class="sc-btn" data-sc="rain">🌧️ Rainy weekend</button>
+        <button class="nav-reset-btn" id="reset">↺ Reset all bins</button>
+      </div>
+    </div>
+
+  </nav>
+
+  <div class="sidenav-footer">
+    <span>Prototype v2</span>
+    <button id="themeToggle">🌙</button>
+  </div>
+</aside>
+
+<!-- ══════════════════════════════════════════════════════════════
+     MAIN
+══════════════════════════════════════════════════════════════ -->
+<div class="main">
+
+  <!-- ── GLOBAL TOP BAR (conditions shared by all pages) ────────── -->
+  <div class="topbar">
+
+    <div class="grp">
+      <span>Day</span>
+      <div class="seg" id="sDay">
+        <button data-v="weekday" aria-pressed="true">Weekday</button>
+        <button data-v="weekend" aria-pressed="false">Weekend</button>
+      </div>
+    </div>
+
+    <div class="grp">
+      <span>Period</span>
+      <div class="seg" id="sPeriod">
+        <button data-v="normal"  aria-pressed="true">Normal</button>
+        <button data-v="exam"    aria-pressed="false">Exam</button>
+        <button data-v="event"   aria-pressed="false">Event</button>
+      </div>
+    </div>
+
+    <div class="grp">
+      <span>Weather</span>
+      <div class="seg" id="sWx">
+        <button data-v="dry"  aria-pressed="true">Dry</button>
+        <button data-v="rain" aria-pressed="false">Rain</button>
+      </div>
+    </div>
+
+    <div class="topbar-time">
+      <span class="topbar-clock clock-display" id="clock">14:00</span>
+      <input type="range" id="hr" class="hr-slider" min="7" max="23" value="14" aria-label="Time"/>
+      <button class="btn-play" id="play">▶ Play</button>
+    </div>
+
+  </div><!-- /topbar -->
+
+  <!-- ── PAGE AREA ─────────────────────────────────────────────── -->
+  <div class="page-area">
+
+    <!-- ══════════════════════════════════════════════════════════
+         PAGE 1 · DASHBOARD
+    ══════════════════════════════════════════════════════════ -->
+    <div class="page active" id="page-dashboard">
+
+      <div class="page-strip">
+        <h2>Dashboard</h2>
+        <p>Predicted bin fill levels right now</p>
+      </div>
+
+      <div class="dash-body">
+
+        <!-- Row 1: bin cards (horizontal scroll) -->
+        <div class="bins-row" id="binsGrid"></div>
+
+        <!-- Row 2: schedule + chart -->
+        <div class="bottom-row">
+
+          <!-- Schedule -->
+          <div class="panel">
+            <div class="panel-title">🚛 Collection round</div>
+            <div class="sched-scroll" id="sched"></div>
+            <div class="stats-row">
+              <div class="stat"><b id="stTrips">–</b><span>stops needed</span></div>
+              <div class="stat"><b id="stSkip">–</b><span>skipped</span></div>
+              <div class="stat"><b id="stSave">–</b><span>fewer stops</span></div>
+            </div>
+            <div class="sched-actions">
+              <button class="btn" id="copy">Copy schedule</button>
+            </div>
+          </div>
+
+          <!-- Chart -->
+          <div class="panel chart-panel">
+            <div class="panel-title" id="chTitle">Fill forecast</div>
+            <div class="chart-wrap" id="chart"></div>
+            <div class="legend">
+              <span><i style="background:var(--l0)"></i>Empty</span>
+              <span><i style="background:var(--l1)"></i>Low</span>
+              <span><i style="background:var(--l2)"></i>Fairly full</span>
+              <span><i style="background:var(--l3)"></i>Full</span>
+            </div>
+            <div class="why-label">Why this prediction?</div>
+            <ul class="why" id="why"></ul>
+          </div>
+
+        </div><!-- /bottom-row -->
+      </div><!-- /dash-body -->
+    </div><!-- /page-dashboard -->
+
+
+    <!-- ══════════════════════════════════════════════════════════
+         PAGE 2 · CAMPUS MAP
+    ══════════════════════════════════════════════════════════ -->
+    <div class="page" id="page-map">
+
+      <div class="page-strip">
+        <h2>Campus Map</h2>
+        <p>Shortest-path routes for collectors and students</p>
+      </div>
+
+      <div class="map-body">
+
+        <!-- Map SVG -->
+        <div class="map-wrap">
+          <svg id="campusMap" xmlns="http://www.w3.org/2000/svg"
+               viewBox="0 0 800 480" preserveAspectRatio="xMidYMid meet"></svg>
+        </div>
+
+        <!-- Right sidebar -->
+        <div class="map-sidebar">
+
+          <!-- Mode pills -->
+          <div class="map-modes">
+            <button class="map-mode-btn active" data-mode="collector">🚛 Collector</button>
+            <button class="map-mode-btn" data-mode="student">🎓 Student</button>
+          </div>
+
+          <!-- Student picker -->
+          <div id="studentPanel" style="display:none">
+            <div class="student-picker">
+              <label for="studentFrom">I am at:</label>
+              <select id="studentFrom"></select>
+              <button class="btn sm" id="findBinBtn" style="margin-top:4px">Find nearest bin</button>
+            </div>
+          </div>
+
+          <!-- Collector hint -->
+          <div id="collectorPanel">
+            <p class="note">Dijkstra finds the shortest path, then the truck follows it. Numbers = visit order.</p>
+          </div>
+
+          <!-- ── Simulation controls ── -->
+          <div class="sim-controls">
+            <div class="sim-controls-title">Simulation</div>
+            <div class="sim-btns">
+              <button class="sim-btn primary" id="simPlay">▶ Play</button>
+              <button class="sim-btn" id="simStep">⏭ Step</button>
+              <button class="sim-btn" id="simReset">↺ Reset</button>
+            </div>
+            <div class="sim-speed-row">
+              <label for="simSpeed">Speed: <span id="simSpeedLabel">1×</span></label>
+              <input type="range" id="simSpeed" min="1" max="4" value="1" step="0.5"/>
+            </div>
+            <div class="sim-phases">
+              <div class="sim-phase-row"><span class="phase-dot dijkstra"></span> Phase 1: Dijkstra explores graph</div>
+              <div class="sim-phase-row"><span class="phase-dot travel"></span> Phase 2: Truck follows shortest path</div>
+              <div class="sim-phase-row"><span class="phase-dot empty"></span> Bin empties on arrival</div>
+            </div>
+          </div>
+
+          <!-- Route info -->
+          <div class="route-info" id="routeInfoBox">Press ▶ Play to simulate the route.</div>
+
+          <!-- Legend -->
+          <div class="map-legend-box">
+            <div class="ml-title">Legend</div>
+            <div class="map-legend-row"><span class="dot" style="background:var(--l0)"></span> Empty</div>
+            <div class="map-legend-row"><span class="dot" style="background:var(--l1)"></span> Low</div>
+            <div class="map-legend-row"><span class="dot" style="background:var(--l2)"></span> Fairly full</div>
+            <div class="map-legend-row"><span class="dot" style="background:var(--l3)"></span> Full – collect</div>
+            <div class="map-legend-row"><span class="dot" style="background:var(--accent)"></span> Dijkstra path</div>
+            <div class="map-legend-row">🚛 Truck / 🚶 Walker</div>
+            <div class="map-legend-row">📍 Depot</div>
+          </div>
+
+        </div><!-- /map-sidebar -->
+      </div><!-- /map-body -->
+    </div><!-- /page-map -->
+
+
+    <!-- ══════════════════════════════════════════════════════════
+         PAGE 3 · ABOUT
+    ══════════════════════════════════════════════════════════ -->
+    <div class="page" id="page-about">
+
+      <div class="page-strip">
+        <h2>About BinBeat</h2>
+        <p>What is real, simulated, and planned</p>
+      </div>
+
+      <div class="about-body">
+
+        <div class="about-panel">
+          <h3>Who is this for?</h3>
+          <p style="font-size:.85rem;line-height:1.6">
+            <strong>Cleaners / collectors</strong> get a prioritised round that skips bins
+            that don't need emptying yet, reducing unnecessary trips. The Campus Map page
+            shows the shortest route between all bins that need attention.<br><br>
+            <strong>Students</strong> can use Campus Map → Student mode to find the nearest
+            bin that isn't full — handy on the way to the cafeteria or after class.
+          </p>
+        </div>
+
+        <div class="about-panel">
+          <h3>Bin locations</h3>
+          <table class="about-table">
+            <tr><th>ID</th><th>Name</th><th>Location</th><th>Type</th></tr>
+            <tr><td>H1</td><td>Hostel 1 – Blk A</td><td>Block A, Ground floor</td><td>Hostel</td></tr>
+            <tr><td>H2</td><td>Hostel 2 – Blk B</td><td>Block B, Level 2</td><td>Hostel</td></tr>
+            <tr><td>H3</td><td>Hostel 3 – Blk C</td><td>Block C, Level 3</td><td>Hostel</td></tr>
+            <tr><td>H4</td><td>Hostel 4 – Blk D</td><td>Block D, Level 1</td><td>Hostel</td></tr>
+            <tr><td>W1</td><td>Walkway Bin 1</td><td>Main walkway, North</td><td>Walkway</td></tr>
+            <tr><td>W2</td><td>Walkway Bin 2</td><td>Main walkway, South</td><td>Walkway</td></tr>
+            <tr><td>C1</td><td>Café Bin</td><td>Student café</td><td>Café</td></tr>
+          </table>
+        </div>
+
+        <div class="about-panel">
+          <h3>What is real vs simulated?</h3>
+          <table class="about-table">
+            <tr><th>Part</th><th>Status</th></tr>
+            <tr><td>Problem, bins, fill scale 0–3, input features</td>
+                <td>Real – from the BinBeat proposal and planned observations.</td></tr>
+            <tr><td>Fill values and bin reset baseline</td>
+                <td>Simulated – placeholders until 7–10 day data is collected.</td></tr>
+            <tr><td>Prediction logic</td>
+                <td>Simulated – hand-written rules mimicking a decision tree.</td></tr>
+            <tr><td>Campus graph / distances</td>
+                <td>Approximate – estimated walking distances.</td></tr>
+            <tr><td>Shortest-path algorithm</td>
+                <td>Real – Dijkstra + greedy nearest-neighbour TSP.</td></tr>
+            <tr><td>Real-time IoT sensing</td>
+                <td>Proposed – future sensors would feed live levels into this model.</td></tr>
+          </table>
+          <p class="note">Predictions support staff judgement; no personal data is collected.</p>
+        </div>
+
+      </div><!-- /about-body -->
+    </div><!-- /page-about -->
+
+  </div><!-- /page-area -->
+</div><!-- /main -->
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script type="module" src="app.js"></script>
+
+<script>
+/* ── Theme toggle ── */
+(function(){
+  const btn = document.getElementById("themeToggle");
+  const root = document.documentElement;
+  function apply(t){
+    root.dataset.theme = t;
+    if(btn) btn.textContent = t==="dark" ? "☀️" : "🌙";
+    try{ localStorage.setItem("binbeat-theme",t); }catch{}
+  }
+  try{ const s=localStorage.getItem("binbeat-theme"); if(s==="dark"||s==="light") apply(s); }catch{}
+  if(btn) btn.addEventListener("click",()=>apply(root.dataset.theme==="dark"?"light":"dark"));
+})();
+
+/* ── Scenario sidebar toggle ── */
+(function(){
+  const btn  = document.getElementById("scToggle");
+  const body = document.getElementById("scBody");
+  btn.addEventListener("click",()=>{
+    btn.classList.toggle("open");
+    body.classList.toggle("open");
+  });
+})();
+</script>
+
+</body>
+</html>
